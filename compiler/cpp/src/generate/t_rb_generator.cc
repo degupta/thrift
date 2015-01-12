@@ -142,7 +142,7 @@ public:
   /**
    * Generate Hooks functions
    */
-   void generate_before_call(const std::string& function_name);
+   void generate_before_thrift_action(const std::string& function_name);
    void generate_on_exception();
 
   /**
@@ -976,12 +976,13 @@ void t_rb_generator::generate_service_server(t_service* tservice) {
   f_service_.indent() << "end" << endl << endl;
 }
 
-void t_rb_generator::generate_before_call(const std::string& function_name) {
-  f_service_.indent() << "@handler.before_call(:" << function_name << ")" << endl;
+void t_rb_generator::generate_before_thrift_action(const std::string& function_name) {
+  f_service_.indent() << "@handler.before_thrift_action(:" << function_name
+                      << ") if @handler.respond_to?(:before_thrift_action)" << endl;
 }
 
 void t_rb_generator::generate_on_exception() {
-  f_service_.indent() << "@handler.on_exception(e)" << endl;
+  f_service_.indent() << "@handler.on_thrift_exception(e) if @handler.respond_to?(:on_thrift_exception)" << endl;
 }
 
 /**
@@ -1020,7 +1021,7 @@ void t_rb_generator::generate_process_function(t_service* tservice, t_function* 
     f_service_.indent_up();
   }
 
-  generate_before_call(tfunction->get_name());
+  generate_before_thrift_action(tfunction->get_name());
 
   // Generate the function call
   t_struct* arg_struct = tfunction->get_arglist();
