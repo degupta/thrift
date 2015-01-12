@@ -76,6 +76,12 @@ public:
     iter = parsed_options.find("sorted_containers");
     sorted_containers_ = (iter != parsed_options.end());
 
+    iter = parsed_options.find("no_async");
+    no_async_ = (iter != parsed_options.end());
+
+    iter = parsed_options.find("no_tuple");
+    no_tuple_ = (iter != parsed_options.end());
+
     iter = parsed_options.find("java5");
     java5_ = (iter != parsed_options.end());
     if (java5_) {
@@ -336,6 +342,8 @@ private:
   bool java5_;
   bool sorted_containers_;
   bool reuse_objects_;
+  bool no_async_;
+  bool no_tuple_;
 };
 
 /**
@@ -2555,11 +2563,17 @@ void t_java_generator::generate_service(t_service* tservice) {
 
   // Generate the three main parts of the service
   generate_service_interface(tservice);
-  generate_service_async_interface(tservice);
+  if (!no_async_) {
+    generate_service_async_interface(tservice);
+  }
   generate_service_client(tservice);
-  generate_service_async_client(tservice);
+  if (!no_async_) {
+    generate_service_async_client(tservice);
+  }
   generate_service_server(tservice);
-  generate_service_async_server(tservice);
+  if (!no_async_) {
+    generate_service_async_server(tservice);
+  }
   generate_service_helpers(tservice);
 
   indent_down();
@@ -5004,4 +5018,6 @@ THRIFT_REGISTER_GENERATOR(
     "(read and write).\n"
     "    sorted_containers:\n"
     "                     Use TreeSet/TreeMap instead of HashSet/HashMap as a implementation of "
-    "set/map.\n")
+    "set/map.\n"
+    "    no_tuple:        Do not generate tuple classes\n"
+    "    no_async:        Do not generate async classes\n")
