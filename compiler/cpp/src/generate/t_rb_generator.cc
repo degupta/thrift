@@ -977,11 +977,11 @@ void t_rb_generator::generate_service_server(t_service* tservice) {
 }
 
 void t_rb_generator::generate_before_call(const std::string& function_name) {
-  f_service_.indent() << "@handler.before_call(:" << function_name << ") rescue NoMethodError" << endl;
+  f_service_.indent() << "@handler.before_call(:" << function_name << ")" << endl;
 }
 
 void t_rb_generator::generate_on_exception() {
-  f_service_.indent() << "@handler.on_exception(e) rescue NoMethodError" << endl;
+  f_service_.indent() << "@handler.on_exception(e)" << endl;
 }
 
 /**
