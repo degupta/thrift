@@ -400,8 +400,8 @@ string t_java_generator::java_type_imports() {
   return string() + hash_builder + "import org.apache.thrift.scheme.IScheme;\n"
          + "import org.apache.thrift.scheme.SchemeFactory;\n"
          + "import org.apache.thrift.scheme.StandardScheme;\n\n"
-         + "import org.apache.thrift.scheme.TupleScheme;\n"
-         + "import org.apache.thrift.protocol.TTupleProtocol;\n"
+         + (no_tuple_ ? "" : "import org.apache.thrift.scheme.TupleScheme;\n")
+         + (no_tuple_ ? "" : "import org.apache.thrift.protocol.TTupleProtocol;\n")
          + "import org.apache.thrift.protocol.TProtocolException;\n"
          + "import org.apache.thrift.EncodingUtils;\n" + "import org.apache.thrift.TException;\n"
          + "import org.apache.thrift.async.AsyncMethodCallback;\n"
@@ -1556,7 +1556,9 @@ void t_java_generator::generate_java_struct_definition(ofstream& out,
   generate_java_struct_read_object(out, tstruct);
 
   generate_java_struct_standard_scheme(out, tstruct, is_result);
-  generate_java_struct_tuple_scheme(out, tstruct);
+  if (!no_tuple_) {
+    generate_java_struct_tuple_scheme(out, tstruct);
+  }
 
   scope_down(out);
   out << endl;
@@ -4481,8 +4483,10 @@ void t_java_generator::generate_scheme_map(ofstream& out, t_struct* tstruct) {
   indent(out) << "static {" << endl;
   indent(out) << "  schemes.put(StandardScheme.class, new " << tstruct->get_name()
               << "StandardSchemeFactory());" << endl;
-  indent(out) << "  schemes.put(TupleScheme.class, new " << tstruct->get_name()
-              << "TupleSchemeFactory());" << endl;
+  if (!no_tuple_) {
+    indent(out) << "  schemes.put(TupleScheme.class, new " << tstruct->get_name()
+                << "TupleSchemeFactory());" << endl;
+  }
   indent(out) << "}" << endl;
 }
 
