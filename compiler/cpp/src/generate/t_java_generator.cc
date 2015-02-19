@@ -79,6 +79,9 @@ public:
     iter = parsed_options.find("no_async");
     no_async_ = (iter != parsed_options.end());
 
+    iter = parsed_options.find("no_log");
+    no_log_ = (iter != parsed_options.end());
+
     iter = parsed_options.find("no_tuple");
     no_tuple_ = (iter != parsed_options.end());
 
@@ -344,6 +347,7 @@ private:
   bool reuse_objects_;
   bool no_async_;
   bool no_tuple_;
+  bool no_log_;
 };
 
 /**
@@ -412,7 +416,8 @@ string t_java_generator::java_type_imports() {
          + "import java.util.Collections;\n" + "import java.util.BitSet;\n"
          + "import java.nio.ByteBuffer;\n"
            "import java.util.Arrays;\n" + "import javax.annotation.Generated;\n"
-         + "import org.slf4j.Logger;\n" + "import org.slf4j.LoggerFactory;\n\n";
+         + (no_log_ ? "" : "import org.slf4j.Logger;\n")
+         + (no_log_ ? "" : "import org.slf4j.LoggerFactory;\n\n");
 }
 
 string t_java_generator::java_suppressions() {
@@ -3003,9 +3008,11 @@ void t_java_generator::generate_service_server(t_service* tservice) {
                      << extends_processor << " implements org.apache.thrift.TProcessor {" << endl;
   indent_up();
 
-  indent(f_service_)
+  if (!no_log_) {
+    indent(f_service_)
       << "private static final Logger LOGGER = LoggerFactory.getLogger(Processor.class.getName());"
       << endl;
+  }
 
   indent(f_service_) << "public Processor(I iface) {" << endl;
   indent(f_service_) << "  super(iface, getProcessMap(new HashMap<String, "
@@ -3066,8 +3073,10 @@ void t_java_generator::generate_service_async_server(t_service* tservice) {
                      << extends_processor << " {" << endl;
   indent_up();
 
-  indent(f_service_) << "private static final Logger LOGGER = "
-                        "LoggerFactory.getLogger(AsyncProcessor.class.getName());" << endl;
+  if (!no_log_) {
+    indent(f_service_) << "private static final Logger LOGGER = "
+                          "LoggerFactory.getLogger(AsyncProcessor.class.getName());" << endl;
+  }
 
   indent(f_service_) << "public AsyncProcessor(I iface) {" << endl;
   indent(f_service_) << "  super(iface, getProcessMap(new HashMap<String, "
@@ -3187,8 +3196,10 @@ void t_java_generator::generate_process_async_function(t_service* tservice, t_fu
         << endl;
     indent(f_service_) << "  return;" << endl;
     indent(f_service_) << "} catch (Exception e) {" << endl;
-    indent(f_service_) << "  LOGGER.error(\"Exception writing to internal frame buffer\", e);"
-                       << endl;
+    if (!no_log_) {
+      indent(f_service_) << "  LOGGER.error(\"Exception writing to internal frame buffer\", e);"
+                         << endl;
+    }
     indent(f_service_) << "}" << endl;
     indent(f_service_) << "fb.close();" << endl;
   }
@@ -3236,8 +3247,10 @@ void t_java_generator::generate_process_async_function(t_service* tservice, t_fu
     indent(f_service_) << "  fcall.sendResponse(fb,msg,msgType,seqid);" << endl;
     indent(f_service_) << "  return;" << endl;
     indent(f_service_) << "} catch (Exception ex) {" << endl;
-    indent(f_service_) << "  LOGGER.error(\"Exception writing to internal frame buffer\", ex);"
-                       << endl;
+    if (!no_log_) {
+      indent(f_service_) << "  LOGGER.error(\"Exception writing to internal frame buffer\", ex);"
+                         << endl;
+    }
     indent(f_service_) << "}" << endl;
     indent(f_service_) << "fb.close();" << endl;
   }
@@ -5054,4 +5067,5 @@ THRIFT_REGISTER_GENERATOR(
     "                     Use TreeSet/TreeMap instead of HashSet/HashMap as a implementation of "
     "set/map.\n"
     "    no_tuple:        Do not generate tuple classes\n"
-    "    no_async:        Do not generate async classes\n")
+    "    no_async:        Do not generate async classes\n"
+    "    no_log:          Do not generate logging code\n")
