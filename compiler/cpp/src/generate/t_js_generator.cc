@@ -57,6 +57,9 @@ public:
     iter = parsed_options.find("node");
     gen_node_ = (iter != parsed_options.end());
 
+    iter = parsed_options.find("wifix");
+    wi_fix_ = (iter != parsed_options.end());
+
     iter = parsed_options.find("jquery");
     gen_jquery_ = (iter != parsed_options.end());
 
@@ -290,6 +293,11 @@ private:
    * True if we should generate a TypeScript Definition File for each service.
    */
   bool gen_ts_;
+
+  /**
+   * True if you want to include WI Pacthes
+   */
+  bool wi_fix_;
 
   /**
    * The name of the defined module(s), for TypeScript Definition Files.
@@ -1502,7 +1510,7 @@ void t_js_generator::generate_deserialize_field(ofstream& out,
       out << "readI32()";
     }
 
-    if (!gen_node_) {
+    if (!gen_node_ && !wi_fix_) {
       out << ".value";
     }
 
@@ -1570,7 +1578,7 @@ void t_js_generator::generate_deserialize_container(ofstream& out, t_type* ttype
   scope_up(out);
 
   if (ttype->is_map()) {
-    if (!gen_node_) {
+    if (!gen_node_ && !wi_fix_) {
       out << indent() << "if (" << i << " > 0 ) {" << endl << indent()
           << "  if (input.rstack.length > input.rpos[input.rpos.length -1] + 1) {" << endl
           << indent() << "    input.rstack.pop();" << endl << indent() << "  }" << endl << indent()
@@ -2050,4 +2058,5 @@ THRIFT_REGISTER_GENERATOR(js,
                           "Javascript",
                           "    jquery:          Generate jQuery compatible code.\n"
                           "    node:            Generate node.js compatible code.\n"
+                          "    wifix:           Add WI patches \n"
                           "    ts:              Generate TypeScript definition files.\n")
