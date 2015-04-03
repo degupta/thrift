@@ -2583,7 +2583,7 @@ void t_go_generator::generate_process_function(t_service* tservice, t_function* 
 
     f_service_ << indent() << "}"; // closes err2 != nil
 
-    f_service_ << indent() << "} else if ";
+    f_service_ << indent() << "else if ";
   } else {
     f_service_ << indent() << "if ";
   }
