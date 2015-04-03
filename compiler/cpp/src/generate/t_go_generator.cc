@@ -84,6 +84,8 @@ public:
 
     generate_hooks_ = (parsed_options.find("generate_hooks") != parsed_options.end());
 
+    no_remote_ = (parsed_options.find("no_remote") != parsed_options.end());
+
     iter = parsed_options.find("thrift_import");
 
     if (iter != parsed_options.end()) {
@@ -280,6 +282,7 @@ private:
   std::string gen_package_prefix_;
   std::string gen_thrift_import_;
   bool generate_hooks_;
+  bool no_remote_;
 
   /**
    * File streams
@@ -660,9 +663,11 @@ void t_go_generator::init_generator() {
   vector<t_service*> services = program_->get_services();
   vector<t_service*>::iterator sv_iter;
 
-  for (sv_iter = services.begin(); sv_iter != services.end(); ++sv_iter) {
-    string service_dir = package_dir_ + "/" + underscore((*sv_iter)->get_name()) + "-remote";
-    MKDIR(service_dir.c_str());
+  if (!no_remote_) {
+    for (sv_iter = services.begin(); sv_iter != services.end(); ++sv_iter) {
+      string service_dir = package_dir_ + "/" + underscore((*sv_iter)->get_name()) + "-remote";
+      MKDIR(service_dir.c_str());
+    }
   }
 
   // Print header
@@ -1568,7 +1573,9 @@ void t_go_generator::generate_service(t_service* tservice) {
   generate_service_client(tservice);
   generate_service_server(tservice);
   generate_service_helpers(tservice);
-  generate_service_remote(tservice);
+  if (!no_remote_) {
+    generate_service_remote(tservice);
+  }
   // Close service file
   f_service_ << endl;
   f_service_.close();
@@ -3538,4 +3545,5 @@ THRIFT_REGISTER_GENERATOR(go, "Go",
                           "    package_prefix=  Package prefix for generated files.\n" \
                           "    thrift_import=   Override thrift package import path (default:" + default_thrift_import + ")\n" \
                           "    generate_hooks=  Generate before action hoooks)\n" \
+                          "    no_remote=       Do not generate remote)\n" \
                           "    package=         Package name (default: inferred from thrift file name)\n")
