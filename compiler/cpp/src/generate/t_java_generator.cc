@@ -94,6 +94,9 @@ public:
     iter = parsed_options.find("reuse-objects");
     reuse_objects_ = (iter != parsed_options.end());
 
+    iter = parsed_options.find("option_type");
+    use_option_type_ = (iter != parsed_options.end());
+
     out_dir_base_ = (bean_style_ ? "gen-javabean" : "gen-java");
   }
 
@@ -348,6 +351,7 @@ private:
   bool no_async_;
   bool no_tuple_;
   bool no_log_;
+  bool use_option_type_;
 };
 
 /**
@@ -397,8 +401,14 @@ string t_java_generator::java_package() {
 string t_java_generator::java_type_imports() {
   string hash_builder;
   string tree_set_and_map;
+  string option;
   if (sorted_containers_) {
     tree_set_and_map = string() + "import java.util.TreeSet;\n" + "import java.util.TreeMap;\n";
+  }
+
+  if (use_option_type_) {
+    option = string() +
+      "import org.apache.thrift.Option;\n";
   }
 
   return string() + hash_builder + "import org.apache.thrift.scheme.IScheme;\n"
@@ -407,7 +417,9 @@ string t_java_generator::java_type_imports() {
          + (no_tuple_ ? "" : "import org.apache.thrift.scheme.TupleScheme;\n")
          + (no_tuple_ ? "" : "import org.apache.thrift.protocol.TTupleProtocol;\n")
          + "import org.apache.thrift.protocol.TProtocolException;\n"
-         + "import org.apache.thrift.EncodingUtils;\n" + "import org.apache.thrift.TException;\n"
+         + "import org.apache.thrift.EncodingUtils;\n"
+         + option
+         + "import org.apache.thrift.TException;\n"
          + "import org.apache.thrift.async.AsyncMethodCallback;\n"
          + "import org.apache.thrift.server.AbstractNonblockingServer.*;\n"
          + "import java.util.List;\n" + "import java.util.ArrayList;\n" + "import java.util.Map;\n"
@@ -2032,16 +2044,7 @@ void t_java_generator::generate_reflection_getters(ostringstream& out,
                                                    string cap_name) {
   indent(out) << "case " << constant_name(field_name) << ":" << endl;
   indent_up();
-
-  if (type->is_base_type() && !type->is_string()) {
-    t_base_type* base_type = (t_base_type*)type;
-
-    indent(out) << "return " << type_name(type, true, false) << ".valueOf("
-                << (base_type->is_bool() ? "is" : "get") << cap_name << "());" << endl << endl;
-  } else {
-    indent(out) << "return get" << cap_name << "();" << endl << endl;
-  }
-
+  indent(out) << "return " << (type->is_bool() ? "is" : "get") << cap_name << "();" << endl << endl;
   indent_down();
 }
 
@@ -2145,17 +2148,36 @@ void t_java_generator::generate_java_bean_boilerplate(ofstream& out, t_struct* t
     t_type* type = get_true_type(field->get_type());
     std::string field_name = field->get_name();
     std::string cap_name = get_cap_name(field_name);
+    bool optional = use_option_type_ && field->get_req() == t_field::T_OPTIONAL;
 
     if (type->is_container()) {
       // Method to return the size of the collection
-      indent(out) << "public int get" << cap_name;
-      out << get_cap_name("size() {") << endl;
+      if (optional) {
+        indent(out) << "public Option<Integer> get" << cap_name;
+        out << get_cap_name("size() {") << endl;
 
-      indent_up();
-      indent(out) << "return (this." << field_name << " == null) ? 0 : "
-                  << "this." << field_name << ".size();" << endl;
-      indent_down();
-      indent(out) << "}" << endl << endl;
+        indent_up();
+        indent(out) << "if (this." << field_name << " == null) {" << endl;
+        indent_up();
+        indent(out) << "return Option.none();" << endl;
+        indent_down();
+        indent(out) << "} else {" << endl;
+        indent_up();
+        indent(out) << "return Option.some(this." << field_name << ".size());" << endl;
+        indent_down();
+        indent(out) << "}" << endl;
+        indent_down();
+        indent(out) << "}" << endl << endl;
+      } else {
+        indent(out) << "public int get" << cap_name;
+        out << get_cap_name("size() {") << endl;
+
+        indent_up();
+        indent(out) << "return (this." << field_name << " == null) ? 0 : " <<
+           "this." << field_name << ".size();" << endl;
+        indent_down();
+        indent(out) << "}" << endl << endl;
+      }
     }
 
     if (type->is_set() || type->is_list()) {
@@ -2167,15 +2189,34 @@ void t_java_generator::generate_java_bean_boilerplate(ofstream& out, t_struct* t
       }
 
       // Iterator getter for sets and lists
-      indent(out) << "public java.util.Iterator<" << type_name(element_type, true, false) << "> get"
-                  << cap_name;
-      out << get_cap_name("iterator() {") << endl;
+      if (optional) {
+        indent(out) << "public Option<java.util.Iterator<" <<
+          type_name(element_type, true, false) <<  ">> get" << cap_name;
+        out << get_cap_name("iterator() {") << endl;
 
-      indent_up();
-      indent(out) << "return (this." << field_name << " == null) ? null : "
-                  << "this." << field_name << ".iterator();" << endl;
-      indent_down();
-      indent(out) << "}" << endl << endl;
+        indent_up();
+        indent(out) << "if (this." << field_name << " == null) {" << endl;
+        indent_up();
+        indent(out) << "return Option.none();" << endl;
+        indent_down();
+        indent(out) << "} else {" << endl;
+        indent_up();
+        indent(out) << "return Option.some(this." << field_name << ".iterator());" << endl;
+        indent_down();
+        indent(out) << "}" << endl;
+        indent_down();
+        indent(out) << "}" << endl << endl;
+      } else {
+        indent(out) << "public java.util.Iterator<" <<
+          type_name(element_type, true, false) <<  "> get" << cap_name;
+        out << get_cap_name("iterator() {") << endl;
+
+        indent_up();
+        indent(out) << "return (this." << field_name << " == null) ? null : " <<
+          "this." << field_name << ".iterator();" << endl;
+        indent_down();
+        indent(out) << "}" << endl << endl;
+      }
 
       // Add to set or list, create if the set/list is null
       indent(out);
@@ -2230,17 +2271,42 @@ void t_java_generator::generate_java_bean_boilerplate(ofstream& out, t_struct* t
                   << endl;
       indent(out) << "}" << endl << endl;
     } else {
-      indent(out) << "public " << type_name(type);
-      if (type->is_base_type() && ((t_base_type*)type)->get_base() == t_base_type::TYPE_BOOL) {
-        out << " is";
+      if (optional) {
+        indent(out) << "public Option<" << type_name(type, true) << ">";
+        if (type->is_base_type() &&
+            ((t_base_type*)type)->get_base() == t_base_type::TYPE_BOOL) {
+          out << " is";
+        } else {
+          out << " get";
+        }
+        out << cap_name << "() {" << endl;
+        indent_up();
+
+        indent(out) << "if (this.isSet" << cap_name << "()) {" << endl;
+        indent_up();
+        indent(out) << "return Option.some(this." << field_name << ");" << endl;
+        indent_down();
+        indent(out) << "} else {" << endl;
+        indent_up();
+        indent(out) << "return Option.none();" << endl;
+        indent_down();
+        indent(out) << "}" << endl;
+        indent_down();
+        indent(out) << "}" << endl << endl;
       } else {
-        out << " get";
+        indent(out) << "public " << type_name(type);
+        if (type->is_base_type() &&
+            ((t_base_type*)type)->get_base() == t_base_type::TYPE_BOOL) {
+          out << " is";
+        } else {
+          out << " get";
+        }
+        out << cap_name << "() {" << endl;
+        indent_up();
+        indent(out) << "return this." << field_name << ";" << endl;
+        indent_down();
+        indent(out) << "}" << endl << endl;
       }
-      out << cap_name << "() {" << endl;
-      indent_up();
-      indent(out) << "return this." << field_name << ";" << endl;
-      indent_down();
-      indent(out) << "}" << endl << endl;
     }
 
     // Simple setter
@@ -2369,7 +2435,17 @@ void t_java_generator::generate_java_struct_tostring(ofstream& out, t_struct* ts
       indent_up();
     }
 
-    if (field->get_type()->is_base_type() && ((t_base_type*)(field->get_type()))->is_binary()) {
+    if (get_true_type(field->get_type())->is_base_type() && ((t_base_type*)(get_true_type(field->get_type())))->is_binary()) {
+      indent(out) << "org.apache.thrift.TBaseHelper.toString(this." << field->get_name() << ", sb);"
+                  << endl;
+    } else if ((field->get_type()->is_set()) &&
+               (get_true_type(((t_set*) field->get_type())->get_elem_type())->is_base_type()) &&
+               (((t_base_type*) get_true_type(((t_set*) field->get_type())->get_elem_type()))->is_binary())) {
+      indent(out) << "org.apache.thrift.TBaseHelper.toString(this." << field->get_name() << ", sb);"
+                  << endl;
+    } else if ((field->get_type()->is_list()) &&
+               (get_true_type(((t_list*) field->get_type())->get_elem_type())->is_base_type()) &&
+               (((t_base_type*) get_true_type(((t_list*) field->get_type())->get_elem_type()))->is_binary())) {
       indent(out) << "org.apache.thrift.TBaseHelper.toString(this." << field->get_name() << ", sb);"
                   << endl;
     } else {
@@ -5060,6 +5136,7 @@ THRIFT_REGISTER_GENERATOR(
     "    android:         Generated structures are Parcelable.\n"
     "    android_legacy:  Do not use java.io.IOException(throwable) (available for Android 2.3 and "
     "above).\n"
+    "    option_type:     Wrap optional fields in an Option type.\n"
     "    java5:           Generate Java 1.5 compliant code (includes android_legacy flag).\n"
     "    reuse-objects:   Data objects will not be allocated, but existing instances will be used "
     "(read and write).\n"

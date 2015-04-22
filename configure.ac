@@ -18,6 +18,7 @@
 #
 
 AC_PREREQ(2.65)
+AC_CONFIG_MACRO_DIR([./aclocal])
 
 AC_INIT([thrift], [1.0.0-dev])
 
@@ -132,7 +133,7 @@ fi
 AX_THRIFT_LIB(cpp, [C++], yes)
 have_cpp=no
 if test "$with_cpp" = "yes";  then
-  AX_BOOST_BASE([1.54.0])
+  AX_BOOST_BASE([1.53.0])
   if test "x$succeeded" = "xyes" ; then
     AC_SUBST([BOOST_LIB_DIR], [$(echo "$BOOST_LDFLAGS" | sed -e 's/^\-L//')])
     AC_SUBST([BOOST_TEST_LDADD], [$(echo "$BOOST_LIB_DIR/libboost_unit_test_framework.a")])
@@ -193,6 +194,7 @@ AM_CONDITIONAL(WITH_C_GLIB, [test "$have_glib2" = "yes" -a "$have_gobject2" = "y
 
 AX_THRIFT_LIB(csharp, [C#], yes)
 if test "$with_csharp" = "yes";  then
+  PKG_CHECK_MODULES(MONO, mono >= 3.0.0, net_4_5=yes, net_4_5=no)
   PKG_CHECK_MODULES(MONO, mono >= 2.0.0, net_3_5=yes, net_3_5=no)
   PKG_CHECK_MODULES(MONO, mono >= 1.2.4, have_mono=yes, have_mono=no)
   if test "$have_mono" = "yes" ; then
@@ -201,6 +203,7 @@ if test "$with_csharp" = "yes";  then
 fi
 AM_CONDITIONAL(WITH_MONO, [test "$have_csharp" = "yes"])
 AM_CONDITIONAL(NET_2_0, [test "$net_3_5" = "no"])
+AM_CONDITIONAL(NET_4_5, [test "$net_4_5" = "yes"])
 
 AX_THRIFT_LIB(java, [Java], yes)
 if test "$with_java" = "yes";  then
@@ -340,7 +343,24 @@ AX_THRIFT_LIB(go, [Go], yes)
 if test "$with_go" = "yes";  then
   AC_PATH_PROG([GO], [go])
   if [[ -x "$GO" ]] ; then
-    have_go="yes"
+    AS_IF([test -n "$GO"],[
+      ax_go_version="1.4"
+
+      AC_MSG_CHECKING([for Go version])
+      golang_version=`$GO version 2>&1 | $SED -e 's/\(go \)\(version \)\(go\)\(@<:@0-9@:>@.@<:@0-9@:>@.@<:@0-9@:>@\)\(@<:@\*@:>@*\).*/\4/'`
+      AC_MSG_RESULT($golang_version)
+      AC_SUBST([golang_version],[$golang_version])
+      AX_COMPARE_VERSION([$ax_go_version],[le],[$golang_version],[
+      :
+        have_go="yes"
+      ],[
+      :
+        have_go="no"
+      ])
+    ],[
+      AC_MSG_WARN([could not find Go ])
+      have_go="no"
+    ])
   fi
 fi
 AM_CONDITIONAL(WITH_GO, [test "$have_go" = "yes"])
@@ -350,7 +370,7 @@ AX_THRIFT_LIB(haxe, [Haxe], yes)
 if test "$with_haxe" = "yes";  then
   AC_PATH_PROG([HAXE], [haxe])
   if [[ -x "$HAXE" ]] ; then
-    have_haxe="yes"
+    AX_PROG_HAXE_VERSION( [3.1.3], have_haxe="yes", have_haxe="no")
   fi
 fi
 AM_CONDITIONAL(WITH_HAXE, [test "$have_haxe" = "yes"])
@@ -578,6 +598,7 @@ AC_CHECK_FUNCS([memset])
 AC_CHECK_FUNCS([mkdir])
 AC_CHECK_FUNCS([realpath])
 AC_CHECK_FUNCS([select])
+AC_CHECK_FUNCS([setlocale])
 AC_CHECK_FUNCS([socket])
 AC_CHECK_FUNCS([strchr])
 AC_CHECK_FUNCS([strdup])
@@ -675,6 +696,7 @@ AC_CONFIG_FILES([
   lib/c_glib/thrift_c_glib.pc
   lib/c_glib/test/Makefile
   lib/csharp/Makefile
+  lib/csharp/test/ThriftTest/Makefile
   lib/d/Makefile
   lib/d/test/Makefile
   lib/erl/Makefile
@@ -788,6 +810,7 @@ if test "$have_haxe" = "yes" ; then
   echo
   echo "Haxe Library:"
   echo "   Using Haxe ................ : $HAXE"
+  echo "   Using Haxe version ........ : $HAXE_VERSION"
 fi
 if test "$have_perl" = "yes" ; then
   echo

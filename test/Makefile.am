@@ -69,7 +69,6 @@ check-local:
 
 EXTRA_DIST = \
 	keys \
-	test.sh \
 	test.py \
 	tests.json \
 	c_glib \
@@ -104,3 +103,7 @@ EXTRA_DIST = \
 	ThriftTest.thrift \
 	FastbinaryTest.py \
 	README.md
+
+precross-%:
+	$(MAKE) -C $* precross
+precross: precross-py precross-rb precross-c_glib precross-cpp precross-perl precross-php precross-go

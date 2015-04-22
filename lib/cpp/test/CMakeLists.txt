@@ -70,6 +70,7 @@ set(UnitTest_SOURCES
     Base64Test.cpp
     ToStringTest.cpp
     TypedefTest.cpp
+    TServerSocketTest.cpp
 )
 
 if(NOT WITH_BOOSTTHREADS AND NOT WITH_STDTHREADS)
@@ -235,7 +236,6 @@ add_test(NAME OpenSSLManualInitTest COMMAND OpenSSLManualInitTest)
 endif()
 
 if(WITH_QT4)
-cmake_minimum_required(VERSION 2.8.12)
 set(CMAKE_AUTOMOC ON)
 find_package(Qt4 REQUIRED COMPONENTS QtTest)
 set(TQTcpServerTest_SOURCES

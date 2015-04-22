@@ -35,6 +35,7 @@
 #include <sys/types.h>
 #include <sstream>
 #include <algorithm>
+#include <clocale>
 #include "t_generator.h"
 #include "platform.h"
 #include "version.h"
@@ -298,9 +299,12 @@ private:
   std::string package_name_;
   std::string package_dir_;
 
-  static std::string publicize(const std::string& value, bool is_args_or_result = false);
-  static std::string new_prefix(const std::string& value);
-  static std::string privatize(const std::string& value);
+  std::set<std::string> commonInitialisms;
+
+  std::string camelcase(const std::string& value) const;
+  std::string publicize(const std::string& value, bool is_args_or_result = false) const;
+  std::string privatize(const std::string& value) const;
+  std::string new_prefix(const std::string& value) const;
   static std::string variable_name_to_go_name(const std::string& value);
   static bool is_pointer_field(t_field* tfield, bool in_container = false);
   static bool omit_initialization(t_field* tfield);
@@ -412,7 +416,28 @@ bool t_go_generator::is_pointer_field(t_field* tfield, bool in_container_value) 
   throw "INVALID TYPE IN type_to_go_type: " + type->get_name();
 }
 
-std::string t_go_generator::publicize(const std::string& value, bool is_args_or_result) {
+std::string t_go_generator::camelcase(const std::string& value) const {
+  std::string value2(value);
+  std::setlocale(LC_ALL, "C"); // set locale to classic
+  
+  // as long as we are changing things, let's change _ followed by lowercase to capital and fix common initialisms
+  for (std::string::size_type i = 1; i < value2.size() - 1; ++i) {
+    if (value2[i] == '_'){
+      if (islower(value2[i + 1])) {
+        value2.replace(i, 2, 1, toupper(value2[i + 1]));
+      }
+      std::string word = value2.substr(i,value2.find('_', i));
+      std::transform(word.begin(), word.end(), word.begin(), ::toupper);
+      if (commonInitialisms.find(word) != commonInitialisms.end()) {
+        value2.replace(i, word.length(), word); 
+      }
+    }
+  }
+  
+  return value2;
+}
+
+std::string t_go_generator::publicize(const std::string& value, bool is_args_or_result) const {
   if (value.size() <= 0) {
     return value;
   }
@@ -429,12 +454,7 @@ std::string t_go_generator::publicize(const std::string& value, bool is_args_or_
     value2[0] = toupper(value2[0]);
   }
 
-  // as long as we are changing things, let's change _ followed by lowercase to capital
-  for (string::size_type i = 1; i < value2.size() - 1; ++i) {
-    if (value2[i] == '_' && islower(value2[i + 1])) {
-      value2.replace(i, 2, 1, toupper(value2[i + 1]));
-    }
-  }
+  value2 = camelcase(value2);
 
   // final length before further checks, the string may become longer
   size_t len_before = value2.length();
@@ -460,7 +480,7 @@ std::string t_go_generator::publicize(const std::string& value, bool is_args_or_
   return prefix + value2;
 }
 
-std::string t_go_generator::new_prefix(const std::string& value) {
+std::string t_go_generator::new_prefix(const std::string& value) const {
   if (value.size() <= 0) {
     return value;
   }
@@ -472,7 +492,7 @@ std::string t_go_generator::new_prefix(const std::string& value) {
   return "New" + publicize(value);
 }
 
-std::string t_go_generator::privatize(const std::string& value) {
+std::string t_go_generator::privatize(const std::string& value) const {
   if (value.size() <= 0) {
     return value;
   }
@@ -483,12 +503,7 @@ std::string t_go_generator::privatize(const std::string& value) {
     value2[0] = tolower(value2[0]);
   }
 
-  // as long as we are changing things, let's change _ followed by lowercase to capital
-  for (string::size_type i = 1; i < value2.size() - 1; ++i) {
-    if (value2[i] == '_' && isalpha(value2[i + 1])) {
-      value2.replace(i, 2, 1, toupper(value2[i + 1]));
-    }
-  }
+  value2 = camelcase(value2);
 
   return value2;
 }
@@ -624,6 +639,43 @@ void t_go_generator::init_generator() {
   string module = get_real_go_module(program_);
   string target = module;
   package_dir_ = get_out_dir();
+
+  // This set is taken from https://github.com/golang/lint/blob/master/lint.go#L692
+  commonInitialisms.insert("API");
+  commonInitialisms.insert("ASCII");
+  commonInitialisms.insert("CPU");
+  commonInitialisms.insert("CSS");
+  commonInitialisms.insert("DNS");
+  commonInitialisms.insert("EOF");
+  commonInitialisms.insert("GUID");
+  commonInitialisms.insert("HTML");
+  commonInitialisms.insert("HTTP");
+  commonInitialisms.insert("HTTPS");
+  commonInitialisms.insert("ID");
+  commonInitialisms.insert("IP");
+  commonInitialisms.insert("JSON");
+  commonInitialisms.insert("LHS");
+  commonInitialisms.insert("QPS");
+  commonInitialisms.insert("RAM");
+  commonInitialisms.insert("RHS");
+  commonInitialisms.insert("RPC");
+  commonInitialisms.insert("SLA");
+  commonInitialisms.insert("SMTP");
+  commonInitialisms.insert("SSH");
+  commonInitialisms.insert("TCP");
+  commonInitialisms.insert("TLS");
+  commonInitialisms.insert("TTL");
+  commonInitialisms.insert("UDP");
+  commonInitialisms.insert("UI");
+  commonInitialisms.insert("UID");
+  commonInitialisms.insert("UUID");
+  commonInitialisms.insert("URI");
+  commonInitialisms.insert("URL");
+  commonInitialisms.insert("UTF8");
+  commonInitialisms.insert("VM");
+  commonInitialisms.insert("XML");
+  commonInitialisms.insert("XSRF");
+  commonInitialisms.insert("XSS");
 
   while (true) {
     // TODO: Do better error checking here.
@@ -1038,8 +1090,7 @@ void t_go_generator::get_publicized_name_and_def_value(t_field* tfield,
                                                        t_const_value** OUT_def_value) const {
   const string base_field_name = tfield->get_name();
   const string escaped_field_name = escape_string(base_field_name);
-  const string go_safe_name = variable_name_to_go_name(escaped_field_name);
-  *OUT_pub_name = publicize(go_safe_name);
+  *OUT_pub_name = publicize(escaped_field_name);
   *OUT_def_value = tfield->get_value();
 }
 
@@ -1079,6 +1130,7 @@ void t_go_generator::generate_go_struct_definition(ofstream& out,
   vector<t_field*>::const_iterator m_iter;
 
   std::string tstruct_name(publicize(tstruct->get_name(), is_args || is_result));
+  generate_go_docstring(out, tstruct);
   out << indent() << "type " << tstruct_name << " struct {" << endl;
   /*
      Here we generate the structure specification for the fastbinary codec.
@@ -1129,12 +1181,17 @@ void t_go_generator::generate_go_struct_definition(ofstream& out,
 
       t_type* fieldType = (*m_iter)->get_type();
       string goType = type_to_go_type_with_opt(fieldType, is_pointer_field(*m_iter));
-      string gotag("json:\"" + escape_string((*m_iter)->get_name()) + "\"");
+      string gotag;
+      if ((*m_iter)->get_req() == t_field::T_OPTIONAL) {
+        gotag = "json:\"" + escape_string((*m_iter)->get_name()) + ",omitempty\"";
+      } else {
+        gotag = "json:\"" + escape_string((*m_iter)->get_name()) + "\"";
+      }
       std::map<string, string>::iterator it = (*m_iter)->annotations_.find("go.tag");
       if (it != (*m_iter)->annotations_.end()) {
         gotag = it->second;
       }
-      indent(out) << publicize(variable_name_to_go_name((*m_iter)->get_name())) << " " << goType
+      indent(out) << publicize((*m_iter)->get_name()) << " " << goType
                   << " `thrift:\"" << escape_string((*m_iter)->get_name()) << ","
                   << sorted_keys_pos;
 
@@ -1232,7 +1289,7 @@ void t_go_generator::generate_isset_helpers(ofstream& out,
 
   for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
     const string field_name(
-        publicize(variable_name_to_go_name(escape_string((*f_iter)->get_name()))));
+        publicize(escape_string((*f_iter)->get_name())));
     if ((*f_iter)->get_req() == t_field::T_OPTIONAL || is_pointer_field(*f_iter)) {
       out << indent() << "func (p *" << tstruct_name << ") IsSet" << field_name << "() bool {"
           << endl;
@@ -1283,7 +1340,7 @@ void t_go_generator::generate_countsetfields_helper(ofstream& out,
       continue;
 
     const string field_name(
-        publicize(variable_name_to_go_name(escape_string((*f_iter)->get_name()))));
+        publicize(escape_string((*f_iter)->get_name())));
 
     out << indent() << "if (p.IsSet" << field_name << "()) {" << endl;
     indent_up();
@@ -1321,7 +1378,7 @@ void t_go_generator::generate_go_struct_reader(ofstream& out,
   for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
     if ((*f_iter)->get_req() == t_field::T_REQUIRED) {
       const string field_name(
-          publicize(variable_name_to_go_name(escape_string((*f_iter)->get_name()))));
+          publicize(escape_string((*f_iter)->get_name())));
       indent(out) << "var isset" << field_name << " bool = false;" << endl;
     }
   }
@@ -1377,7 +1434,7 @@ void t_go_generator::generate_go_struct_reader(ofstream& out,
     // Mark required field as read
     if ((*f_iter)->get_req() == t_field::T_REQUIRED) {
       const string field_name(
-          publicize(variable_name_to_go_name(escape_string((*f_iter)->get_name()))));
+          publicize(escape_string((*f_iter)->get_name())));
       out << indent() << "isset" << field_name << " = true" << endl;
     }
 
@@ -1416,7 +1473,7 @@ void t_go_generator::generate_go_struct_reader(ofstream& out,
   for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
     if ((*f_iter)->get_req() == t_field::T_REQUIRED) {
       const string field_name(
-          publicize(variable_name_to_go_name(escape_string((*f_iter)->get_name()))));
+          publicize(escape_string((*f_iter)->get_name())));
       out << indent() << "if !isset" << field_name << "{" << endl;
       out << indent() << "  return thrift.NewTProtocolExceptionWithType(thrift.INVALID_DATA, "
                          "fmt.Errorf(\"Required field " << field_name << " is not set\"));" << endl;
@@ -1518,7 +1575,7 @@ void t_go_generator::generate_go_struct_writer(ofstream& out,
     indent_up();
 
     if (field_required == t_field::T_OPTIONAL) {
-      out << indent() << "if p.IsSet" << publicize(variable_name_to_go_name(field_name)) << "() {"
+      out << indent() << "if p.IsSet" << publicize(field_name) << "() {"
           << endl;
       indent_up();
     }
@@ -1836,7 +1893,7 @@ void t_go_generator::generate_service_client(t_service* tservice) {
     f_service_ << indent() << "args := " << argsname << "{" << endl;
 
     for (fld_iter = fields.begin(); fld_iter != fields.end(); ++fld_iter) {
-      f_service_ << indent() << publicize(variable_name_to_go_name((*fld_iter)->get_name()))
+      f_service_ << indent() << publicize((*fld_iter)->get_name())
                  << " : " << variable_name_to_go_name((*fld_iter)->get_name()) << "," << endl;
     }
     f_service_ << indent() << "}" << endl;
@@ -1926,8 +1983,7 @@ void t_go_generator::generate_service_client(t_service* tservice) {
       vector<t_field*>::const_iterator x_iter;
 
       for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
-        const std::string varname = variable_name_to_go_name((*x_iter)->get_name());
-        const std::string pubname = publicize(varname);
+        const std::string pubname = publicize((*x_iter)->get_name());
 
         f_service_ << indent() << "if result." << pubname << " != nil {" << endl;
         f_service_ << indent() << "  err = result." << pubname << endl;
@@ -1983,6 +2039,9 @@ void t_go_generator::generate_service_remote(t_service* tservice) {
 
   while ((loc = service_module.find(".")) != string::npos) {
     service_module.replace(loc, 1, 1, '/');
+  }
+  if(!gen_package_prefix_.empty()) {
+    service_module = gen_package_prefix_ + service_module;
   }
 
   f_remote << go_autogen_comment();
@@ -2615,7 +2674,7 @@ void t_go_generator::generate_process_function(t_service* tservice, t_function* 
       f_service_ << ", ";
     }
 
-    f_service_ << "args." << publicize(variable_name_to_go_name((*f_iter)->get_name()));
+    f_service_ << "args." << publicize((*f_iter)->get_name());
   }
 
   f_service_ << "); err2 != nil {" << endl;
@@ -2631,7 +2690,7 @@ void t_go_generator::generate_process_function(t_service* tservice, t_function* 
       f_service_ << indent() << "  case " << type_to_go_type(((*xf_iter)->get_type())) << ":"
                  << endl;
       f_service_ << indent() << "result."
-                 << publicize(variable_name_to_go_name((*xf_iter)->get_name())) << " = v" << endl;
+                 << publicize((*xf_iter)->get_name()) << " = v" << endl;
     }
 
     f_service_ << indent() << "  default:" << endl;
@@ -2713,7 +2772,7 @@ void t_go_generator::generate_deserialize_field(ofstream& out,
   (void)coerceData;
   t_type* orig_type = tfield->get_type();
   t_type* type = get_true_type(orig_type);
-  string name(prefix + publicize(variable_name_to_go_name(tfield->get_name())));
+  string name(prefix + publicize(tfield->get_name()));
 
   if (type->is_void()) {
     throw "CANNOT GENERATE DESERIALIZE CODE FOR void TYPE: " + name;
@@ -2974,7 +3033,7 @@ void t_go_generator::generate_serialize_field(ofstream& out,
                                               string prefix,
                                               bool inkey) {
   t_type* type = get_true_type(tfield->get_type());
-  string name(prefix + publicize(variable_name_to_go_name(tfield->get_name())));
+  string name(prefix + publicize(tfield->get_name()));
 
   // Do nothing for void types
   if (type->is_void()) {
@@ -3210,7 +3269,7 @@ void t_go_generator::generate_go_docstring(ofstream& out,
 
     for (p_iter = fields.begin(); p_iter != fields.end(); ++p_iter) {
       t_field* p = *p_iter;
-      ss << " - " << publicize(variable_name_to_go_name(p->get_name()));
+      ss << " - " << publicize(p->get_name());
 
       if (p->has_doc()) {
         ss << ": " << p->get_doc();

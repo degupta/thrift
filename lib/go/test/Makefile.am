@@ -17,11 +17,12 @@
 # under the License.
 #
 
-THRIFT = $(top_srcdir)/compiler/cpp/thrift -out gopath/src/ --gen go:thrift_import=thrift
+THRIFT = $(top_builddir)/compiler/cpp/thrift
+THRIFTARGS = -out gopath/src/ --gen go:thrift_import=thrift
 THRIFTTEST = $(top_srcdir)/test/ThriftTest.thrift
 
 # Thrift for GO has problems with complex map keys: THRIFT-2063
-gopath: $(top_srcdir)/compiler/cpp/thrift $(THRIFTTEST) \
+gopath: $(THRIFT) $(THRIFTTEST) \
 				IncludesTest.thrift \
 				NamespacedTest.thrift \
 				MultiplexedProtocolTest.thrift \
@@ -31,19 +32,23 @@ gopath: $(top_srcdir)/compiler/cpp/thrift $(THRIFTTEST) \
 				GoTagTest.thrift \
 				TypedefFieldTest.thrift \
 				RefAnnotationFieldsTest.thrift \
-				ErrorTest.thrift
+				ErrorTest.thrift \
+				NamesTest.thrift \
+				InitialismsTest.thrift
 	mkdir -p gopath/src
 	grep -v list.*map.*list.*map $(THRIFTTEST) | grep -v 'set<Insanity>' > ThriftTest.thrift
-	$(THRIFT) -r IncludesTest.thrift
-	$(THRIFT) BinaryKeyTest.thrift
-	$(THRIFT) MultiplexedProtocolTest.thrift
-	$(THRIFT) OnewayTest.thrift
-	$(THRIFT) OptionalFieldsTest.thrift
-	$(THRIFT) ServicesTest.thrift
-	$(THRIFT) GoTagTest.thrift
-	$(THRIFT) TypedefFieldTest.thrift
-	$(THRIFT) RefAnnotationFieldsTest.thrift
-	$(THRIFT) ErrorTest.thrift
+	$(THRIFT) $(THRIFTARGS) -r IncludesTest.thrift
+	$(THRIFT) $(THRIFTARGS) BinaryKeyTest.thrift
+	$(THRIFT) $(THRIFTARGS) MultiplexedProtocolTest.thrift
+	$(THRIFT) $(THRIFTARGS) OnewayTest.thrift
+	$(THRIFT) $(THRIFTARGS) OptionalFieldsTest.thrift
+	$(THRIFT) $(THRIFTARGS) ServicesTest.thrift
+	$(THRIFT) $(THRIFTARGS) GoTagTest.thrift
+	$(THRIFT) $(THRIFTARGS) TypedefFieldTest.thrift
+	$(THRIFT) $(THRIFTARGS) RefAnnotationFieldsTest.thrift
+	$(THRIFT) $(THRIFTARGS) ErrorTest.thrift
+	$(THRIFT) $(THRIFTARGS) NamesTest.thrift
+	$(THRIFT) $(THRIFTARGS) InitialismsTest.thrift
 	GOPATH=`pwd`/gopath $(GO) get code.google.com/p/gomock/gomock
 	ln -nfs ../../../thrift gopath/src/thrift
 	ln -nfs ../../tests gopath/src/tests
@@ -56,7 +61,9 @@ check: gopath
 				servicestest \
 				typedeffieldtest \
 				refannotationfieldstest \
-				errortest	
+				errortest	\
+				namestest \
+				initialismstest
 	GOPATH=`pwd`/gopath $(GO) test thrift tests
 
 clean-local:
@@ -77,4 +84,6 @@ EXTRA_DIST = \
 	RefAnnotationFieldsTest.thrift \
 	ServicesTest.thrift \
 	TypedefFieldTest.thrift \
-	ErrorTest.thrift
+	ErrorTest.thrift \
+	NamesTest.thrift \
+	InitialismsTest.thrift

@@ -17,6 +17,8 @@
 # under the License.
 #
 
+SUBDIRS = . test/ThriftTest
+
 THRIFTCODE= \
             src/Collections/THashSet.cs \
             src/Collections/TCollections.cs \
@@ -50,6 +52,7 @@ THRIFTCODE= \
             src/Transport/TBufferedTransport.cs \
             src/Transport/TTransport.cs \
             src/Transport/TSocket.cs \
+            src/Transport/TSocketVersionizer.cs \
             src/Transport/TTransportException.cs \
             src/Transport/TStreamTransport.cs \
             src/Transport/TFramedTransport.cs \
@@ -73,6 +76,10 @@ if NET_2_0
 MONO_DEFINES=/d:NET_2_0
 endif
 
+if NET_4_5
+MONO_DEFINES=/d:NET_4_5 -sdk:4.5
+endif
+
 all-local: Thrift.dll
 
 Thrift.dll: $(THRIFTCODE)
@@ -80,6 +87,9 @@ Thrift.dll: $(THRIFTCODE)
 
 clean-local:
 	$(RM) Thrift.dll
+
+precross:
+	$(MAKE) -C test/ThriftTest precross
 
 # run csharp tests?
 # check:
