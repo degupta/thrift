@@ -22,7 +22,7 @@
 if(MSVC)
     #For visual studio the library naming is as following:
     # Dynamic libraries:
-    #  - thfirt.dll  for release library
+    #  - thrift.dll  for release library
     #  - thriftd.dll for debug library
     #
     # Static libraries:
@@ -37,7 +37,6 @@ if(MSVC)
     # For Debug build types, append a "d" to the library names.
     set(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "Set debug library postfix" FORCE)
     set(CMAKE_RELEASE_POSTFIX "" CACHE STRING "Set release library postfix" FORCE)
-
 
     # Build using /MT option instead of /MD if the WITH_MT options is set
     if(WITH_MT)
@@ -57,15 +56,29 @@ if(MSVC)
         set(STATIC_POSTFIX "md" CACHE STRING "Set static library postfix" FORCE)
     endif(WITH_MT)
 
-elseif(UNIX)
-  # For UNIX
-  # WITH_*THREADS selects which threading library to use
-  if(WITH_BOOSTTHREADS)
-    add_definitions("-DUSE_BOOST_THREAD=1")
-  elseif(WITH_STDTHREADS)
-    add_definitions("-DUSE_STD_THREAD=1")
-  endif()
+    # Disable Windows.h definition of macros for min and max
+    add_definitions("-DNOMINMAX")
 
+    # Disable boost auto linking pragmas - cmake includes the right files
+    add_definitions("-DBOOST_ALL_NO_LIB")
+
+    # Windows build does not know how to make a shared library yet
+    # as there are no __declspec(dllexport) or exports files in the project.
+    if (WITH_SHARED_LIB)
+      message (FATAL_ERROR "Windows build does not support shared library output yet, please set -DWITH_SHARED_LIB=off")
+    endif()
+
+elseif(UNIX)
+  find_program( MEMORYCHECK_COMMAND valgrind )
+  set( MEMORYCHECK_COMMAND_OPTIONS "--gen-suppressions=all --leak-check=full" )
+  set( MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/test/valgrind.suppress" )
+endif()
+
+# WITH_*THREADS selects which threading library to use
+if(WITH_BOOSTTHREADS)
+  add_definitions("-DUSE_BOOST_THREAD=1")
+elseif(WITH_STDTHREADS)
+  add_definitions("-DUSE_STD_THREAD=1")
 endif()
 
 # GCC and Clang.
