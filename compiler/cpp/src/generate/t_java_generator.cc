@@ -88,6 +88,9 @@ public:
     iter = parsed_options.find("no_tuple");
     no_tuple_ = (iter != parsed_options.end());
 
+    iter = parsed_options.find("no_date");
+    no_date_ = (iter != parsed_options.end());
+
     iter = parsed_options.find("java5");
     java5_ = (iter != parsed_options.end());
     if (java5_) {
@@ -353,6 +356,7 @@ private:
   bool reuse_objects_;
   bool no_async_;
   bool no_tuple_;
+  bool no_date_;
   bool no_log_;
   bool use_option_type_;
 };
@@ -5123,9 +5127,13 @@ void t_java_generator::generate_java_struct_tuple_scheme(ofstream& out, t_struct
 void t_java_generator::generate_javax_generated_annotation(ofstream& out) {
   time_t seconds = time(NULL);
   struct tm* now = localtime(&seconds);
-  indent(out) << "@Generated(value = \"" << autogen_summary() << "\", date = \""
-              << (now->tm_year + 1900) << "-" << setfill('0') << setw(2) << (now->tm_mon + 1) << "-"
-              << setfill('0') << setw(2) << now->tm_mday << "\")" << endl;
+  if (no_date_) {
+    indent(out) << "@Generated(value = \"" << autogen_summary() << "\"" << endl;
+  } else {
+    indent(out) << "@Generated(value = \"" << autogen_summary() << "\", date = \""
+                << (now->tm_year + 1900) << "-" << setfill('0') << setw(2) << (now->tm_mon + 1) << "-"
+                << setfill('0') << setw(2) << now->tm_mday << "\")" << endl;
+  }
 }
 
 THRIFT_REGISTER_GENERATOR(
@@ -5148,4 +5156,5 @@ THRIFT_REGISTER_GENERATOR(
     "set/map.\n"
     "    no_tuple:        Do not generate tuple classes\n"
     "    no_async:        Do not generate async classes\n"
+    "    no_date:         Do not add generated date\n"
     "    no_log:          Do not generate logging code\n")
