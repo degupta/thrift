@@ -5128,7 +5128,7 @@ void t_java_generator::generate_javax_generated_annotation(ofstream& out) {
   time_t seconds = time(NULL);
   struct tm* now = localtime(&seconds);
   if (no_date_) {
-    indent(out) << "@Generated(value = \"" << autogen_summary() << "\"" << endl;
+    indent(out) << "@Generated(value = \"" << autogen_summary() << "\")" << endl;
   } else {
     indent(out) << "@Generated(value = \"" << autogen_summary() << "\", date = \""
                 << (now->tm_year + 1900) << "-" << setfill('0') << setw(2) << (now->tm_mon + 1) << "-"
