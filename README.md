@@ -1,3 +1,12 @@
+WI README
+========
+
+We have made some changes to the Thrift generator code. These changes lie in the `wearint` branch. See https://github.com/wearableintelligence/thrift/pull/1
+
+WARNING: The `lib/js/src/thrift.js` file needs to be copied over to the `common` repo to `assets/thrift.js` every time we merge from https://github.com/apache/thrift/tree/master for the npm package generation to work correctly.
+
+
+
 Apache Thrift
 =============
 
