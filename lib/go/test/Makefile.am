@@ -52,7 +52,7 @@ gopath: $(THRIFT) $(THRIFTTEST) \
 	$(THRIFT) $(THRIFTARGS) NamesTest.thrift
 	$(THRIFT) $(THRIFTARGS) InitialismsTest.thrift
 	$(THRIFT) $(THRIFTARGS),read_write_private DontExportRWTest.thrift
-	GOPATH=`pwd`/gopath $(GO) get code.google.com/p/gomock/gomock
+	GOPATH=`pwd`/gopath $(GO) get github.com/golang/mock/gomock
 	ln -nfs ../../../thrift gopath/src/thrift
 	ln -nfs ../../tests gopath/src/tests
 	cp -r ./dontexportrwtest gopath/src

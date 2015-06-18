@@ -5,7 +5,14 @@ We have made some changes to the Thrift generator code. These changes lie in the
 
 WARNING: The `lib/js/src/thrift.js` file needs to be copied over to the `common` repo to `assets/thrift.js` every time we merge from https://github.com/apache/thrift/tree/master for the npm package generation to work correctly.
 
+**Installation notes:** *(MV 2015.06.07)* Some things I had to do to make this work:
 
+- Prior to doing the installation below, follow directions [here](https://blog.evernote.com/tech/2012/12/20/building-apache-thrift-on-mac-os-x/).  *Note I didn't need to change the `thriftl.ll` file as that blog post suggests.
+- Then do the steps outlined [here](http://blog.pragbits.com/it/2015/05/07/build-thrift-on-osx-10-10/) (i.e., setting up bison and openssl)
+- for `configure`, I did `./configure --without-csharp --without-erlang --without-python --without-perl --without-php --without-php_extension --without-ruby --without-haskell` since make was having a problem with php.h.
+- Only then did `make` work
+
+---
 
 Apache Thrift
 =============
