@@ -1054,6 +1054,9 @@ void t_html_generator::generate_service(t_service* tservice) {
   vector<t_function*> functions = tservice->get_functions();
   vector<t_function*>::iterator fn_iter = functions.begin();
   for (; fn_iter != functions.end(); fn_iter++) {
+    if (skip_export(*fn_iter)) {
+      continue;
+    }
     string fn_name = (*fn_iter)->get_name();
     f_out_ << "<div class=\"definition\">";
     f_out_ << "<h4 id=\"Fn_" << service_name_ << "_" << fn_name << "\">Function: " << service_name_
