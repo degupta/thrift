@@ -166,6 +166,7 @@ void t_html_generator::generate_program_toc_row(t_program* tprog) {
       vector<t_function*> functions = (*sv_iter)->get_functions();
       vector<t_function*>::iterator fn_iter;
       for (fn_iter = functions.begin(); fn_iter != functions.end(); ++fn_iter) {
+        if (skip_export(*fn_iter)) { continue; }
         string fn_name = (*fn_iter)->get_name();
         string html = "<li><a href=\"" + make_file_link(fname) + "#Fn_" + name + "_" + fn_name
                       + "\">" + fn_name + "</a></li>";
