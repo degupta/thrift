@@ -248,6 +248,9 @@ void t_html_generator::generate_program_toc_row(t_program* tprog) {
  * stream.
  */
 void t_html_generator::generate_program() {
+  if (skip_export(program_)) {
+    return;
+  }
   // Make output directory
   MKDIR(get_out_dir().c_str());
   current_file_ = program_->get_name() + ".html";
@@ -332,6 +335,7 @@ void t_html_generator::generate_program() {
  * Emits the index.html file for the recursive set of Thrift programs
  */
 void t_html_generator::generate_index() {
+  return; /** this doesn't work properly, do let's not do it */
   current_file_ = "index.html";
   string index_fname = get_out_dir() + current_file_;
   f_out_.open(index_fname.c_str());
