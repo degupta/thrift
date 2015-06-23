@@ -239,6 +239,7 @@ test-driver
 /test/go/gopath
 /test/go/pkg/
 /test/go/src/code.google.com/
+/test/go/src/github.com/
 /test/go/src/gen/
 /test/go/src/thrift
 /test/haxe/bin

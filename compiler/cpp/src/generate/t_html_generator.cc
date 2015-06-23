@@ -102,6 +102,7 @@ public:
   void generate_xception(t_struct* txception);
 
   void print_doc(t_doc* tdoc);
+  bool skip_export(t_doc* tdoc);
   int print_type(t_type* ttype);
   void print_const_value(t_type* type, t_const_value* tvalue);
   void print_fn_args_doc(t_function* tfunction);
@@ -156,6 +157,7 @@ void t_html_generator::generate_program_toc_row(t_program* tprog) {
     vector<t_service*> services = tprog->get_services();
     vector<t_service*>::iterator sv_iter;
     for (sv_iter = services.begin(); sv_iter != services.end(); ++sv_iter) {
+      if (skip_export(*sv_iter)) { continue; }
       string name = get_service_name(*sv_iter);
       f_out_ << "<a href=\"" << make_file_link(fname) << "#Svc_" << name << "\">" << name
              << "</a><br/>" << endl;
@@ -164,6 +166,7 @@ void t_html_generator::generate_program_toc_row(t_program* tprog) {
       vector<t_function*> functions = (*sv_iter)->get_functions();
       vector<t_function*>::iterator fn_iter;
       for (fn_iter = functions.begin(); fn_iter != functions.end(); ++fn_iter) {
+        if (skip_export(*fn_iter)) { continue; }
         string fn_name = (*fn_iter)->get_name();
         string html = "<li><a href=\"" + make_file_link(fname) + "#Fn_" + name + "_" + fn_name
                       + "\">" + fn_name + "</a></li>";
@@ -182,6 +185,7 @@ void t_html_generator::generate_program_toc_row(t_program* tprog) {
     vector<t_enum*> enums = tprog->get_enums();
     vector<t_enum*>::iterator en_iter;
     for (en_iter = enums.begin(); en_iter != enums.end(); ++en_iter) {
+      if (skip_export(*en_iter)) { continue; }
       string name = (*en_iter)->get_name();
       // f_out_ << "<a href=\"" << make_file_link(fname) << "#Enum_" << name << "\">" << name
       // <<  "</a><br/>" << endl;
@@ -193,6 +197,7 @@ void t_html_generator::generate_program_toc_row(t_program* tprog) {
     vector<t_typedef*> typedefs = tprog->get_typedefs();
     vector<t_typedef*>::iterator td_iter;
     for (td_iter = typedefs.begin(); td_iter != typedefs.end(); ++td_iter) {
+      if (skip_export(*td_iter)) { continue; }
       string name = (*td_iter)->get_symbolic();
       // f_out_ << "<a href=\"" << make_file_link(fname) << "#Typedef_" << name << "\">" << name
       // << "</a><br/>" << endl;
@@ -205,6 +210,7 @@ void t_html_generator::generate_program_toc_row(t_program* tprog) {
     vector<t_struct*> objects = tprog->get_objects();
     vector<t_struct*>::iterator o_iter;
     for (o_iter = objects.begin(); o_iter != objects.end(); ++o_iter) {
+      if (skip_export(*o_iter)) { continue; }
       string name = (*o_iter)->get_name();
       // f_out_ << "<a href=\"" << make_file_link(fname) << "#Struct_" << name << "\">" << name
       //<< "</a><br/>" << endl;
@@ -223,6 +229,7 @@ void t_html_generator::generate_program_toc_row(t_program* tprog) {
     vector<t_const*> consts = tprog->get_consts();
     vector<t_const*>::iterator con_iter;
     for (con_iter = consts.begin(); con_iter != consts.end(); ++con_iter) {
+      if (skip_export(*con_iter)) { continue; }
       string name = (*con_iter)->get_name();
       string html = "<code><a href=\"" + make_file_link(fname) + "#Const_" + name + "\">" + name
                     + "</a></code>";
@@ -241,6 +248,9 @@ void t_html_generator::generate_program_toc_row(t_program* tprog) {
  * stream.
  */
 void t_html_generator::generate_program() {
+  if (skip_export(program_)) {
+    return;
+  }
   // Make output directory
   MKDIR(get_out_dir().c_str());
   current_file_ = program_->get_name() + ".html";
@@ -325,6 +335,7 @@ void t_html_generator::generate_program() {
  * Emits the index.html file for the recursive set of Thrift programs
  */
 void t_html_generator::generate_index() {
+  return; /** this doesn't work properly, do let's not do it */
   current_file_ = "index.html";
   string index_fname = get_out_dir() + current_file_;
   f_out_.open(index_fname.c_str());
@@ -401,6 +412,14 @@ void t_html_generator::print_doc(t_doc* tdoc) {
       f_out_ << escape_html(tdoc->get_doc()) << "<br/>";
     }
   }
+}
+
+bool t_html_generator::skip_export(t_doc* tdoc) {
+  if (!tdoc->has_doc()) {
+    return false;
+  }
+    
+  return (tdoc->get_doc().find("NOHTML") != std::string::npos);
 }
 
 bool t_html_generator::is_utf8_sequence(std::string const& str, size_t firstpos) {
@@ -896,6 +915,9 @@ void t_html_generator::print_fn_args_doc(t_function* tfunction) {
  * @param ttypedef The type definition
  */
 void t_html_generator::generate_typedef(t_typedef* ttypedef) {
+  if (skip_export(ttypedef)) {
+    return;
+  }
   string name = ttypedef->get_name();
   f_out_ << "<div class=\"definition\">";
   f_out_ << "<h3 id=\"Typedef_" << name << "\">Typedef: " << name << "</h3>" << endl;
@@ -912,6 +934,9 @@ void t_html_generator::generate_typedef(t_typedef* ttypedef) {
  * @param tenum The enumeration
  */
 void t_html_generator::generate_enum(t_enum* tenum) {
+  if (skip_export(tenum)) {
+    return;
+  }
   string name = tenum->get_name();
   f_out_ << "<div class=\"definition\">";
   f_out_ << "<h3 id=\"Enum_" << name << "\">Enumeration: " << name << "</h3>" << endl;
@@ -935,6 +960,9 @@ void t_html_generator::generate_enum(t_enum* tenum) {
  * Generates a constant value
  */
 void t_html_generator::generate_const(t_const* tconst) {
+  if (skip_export(tconst)) {
+    return;
+  }
   string name = tconst->get_name();
   f_out_ << "<tr id=\"Const_" << name << "\"><td><code>" << name << "</code></td><td>";
   print_type(tconst->get_type());
@@ -954,6 +982,9 @@ void t_html_generator::generate_const(t_const* tconst) {
  * @param tstruct The struct definition
  */
 void t_html_generator::generate_struct(t_struct* tstruct) {
+  if (skip_export(tstruct)) {
+    return;
+  }
   string name = tstruct->get_name();
   f_out_ << "<div class=\"definition\">";
   f_out_ << "<h3 id=\"Struct_" << name << "\">";
@@ -1014,6 +1045,9 @@ void t_html_generator::generate_xception(t_struct* txception) {
  * @param tservice The service definition
  */
 void t_html_generator::generate_service(t_service* tservice) {
+  if (skip_export(tservice)) {
+    return;
+  }
   f_out_ << "<h3 id=\"Svc_" << service_name_ << "\">Service: " << service_name_ << "</h3>" << endl;
 
   if (tservice->get_extends()) {
@@ -1025,6 +1059,9 @@ void t_html_generator::generate_service(t_service* tservice) {
   vector<t_function*> functions = tservice->get_functions();
   vector<t_function*>::iterator fn_iter = functions.begin();
   for (; fn_iter != functions.end(); fn_iter++) {
+    if (skip_export(*fn_iter)) {
+      continue;
+    }
     string fn_name = (*fn_iter)->get_name();
     f_out_ << "<div class=\"definition\">";
     f_out_ << "<h4 id=\"Fn_" << service_name_ << "_" << fn_name << "\">Function: " << service_name_
