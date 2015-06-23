@@ -3639,6 +3639,5 @@ THRIFT_REGISTER_GENERATOR(go, "Go",
                           "    generate_hooks=  Generate before action hoooks)\n" \
                           "    no_remote=       Do not generate remote)\n" \
                           "    package=         Package name (default: inferred from thrift file name)\n" \
-                          "    package=         Package name (default: inferred from thrift file name)\n" \
                           "    read_write_private\n"
                           "                     Make read/write methods private, default is public Read/Write\n")
