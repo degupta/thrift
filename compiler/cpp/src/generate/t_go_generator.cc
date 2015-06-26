@@ -1749,7 +1749,7 @@ void t_go_generator::generate_service_interface(t_service* tservice) {
 
     if (generate_hooks_) {
       f_service_ << indent() << "// Called before any other action is called" << endl;
-      f_service_ << indent() << "BeforeAction(actionName string, args ...interface{}) (err error)" << endl;
+      f_service_ << indent() << "BeforeAction(actionName string, args map[string]interface{}) (err error)" << endl;
     }
   }
 
@@ -2639,16 +2639,16 @@ void t_go_generator::generate_process_function(t_service* tservice, t_function* 
     f_service_ << indent() << "if ";
 
     // Generate the function call
-    f_service_ << "err2 = p.handler.BeforeAction(\"" << publicize(tfunction->get_name()) << "\", ";
+    f_service_ << "err2 = p.handler.BeforeAction(\"" << publicize(tfunction->get_name()) << "\", map[string]interface{}{";
     bool first = true;
     for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
       if (!first) {
         f_service_ << ", ";
       }
-      f_service_ << "args." << publicize((*f_iter)->get_name());
+      f_service_ << "\"" << publicize((*f_iter)->get_name()) << "\": args." << publicize((*f_iter)->get_name());
       first = false;
     }
-    f_service_ << ");";
+    f_service_ << "});";
     f_service_ << "err2 != nil {" << endl;
 
     t_struct* exceptions = tfunction->get_xceptions();
