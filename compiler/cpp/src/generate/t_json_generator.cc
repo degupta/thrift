@@ -60,6 +60,8 @@ public:
     std::map<std::string, std::string>::const_iterator iter;
     iter = parsed_options.find("merge");
     should_merge_includes_ = (iter != parsed_options.end());
+    iter = parsed_options.find("full_name");
+    full_name_ = (iter != parsed_options.end());
   }
 
   virtual ~t_json_generator() {}
@@ -82,6 +84,7 @@ public:
 
 private:
   bool should_merge_includes_;
+  bool full_name_;
 
   std::ofstream f_json_;
   std::stack<bool> comma_needed_;
@@ -708,7 +711,7 @@ string t_json_generator::get_type_name(t_type* ttype) {
 }
 
 string t_json_generator::get_qualified_name(t_type* ttype) {
-  if (should_merge_includes_ || ttype->get_program() == program_) {
+  if (!full_name_ && (should_merge_includes_ || ttype->get_program() == program_)) {
     return ttype->get_name();
   }
   return ttype->get_program()->get_name() + "." + ttype->get_name();
@@ -716,4 +719,5 @@ string t_json_generator::get_qualified_name(t_type* ttype) {
 
 THRIFT_REGISTER_GENERATOR(json,
                           "JSON",
-                          "    merge:           Generate output with included files merged\n")
+                          "    merge:           Generate output with included files merged\n"
+                          "    full_name:       Generate file_name.function_name\n")
