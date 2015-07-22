@@ -61,6 +61,9 @@ public:
     iter = parsed_options.find("wifix");
     wi_fix_ = (iter != parsed_options.end());
 
+    iter = parsed_options.find("no_init");
+    no_init_ = (iter != parsed_options.end());
+
     iter = parsed_options.find("jquery");
     gen_jquery_ = (iter != parsed_options.end());
 
@@ -301,6 +304,11 @@ private:
    * True if you want to include WI Pacthes
    */
   bool wi_fix_;
+
+  /**
+   * True if you don't want to generate initializers for union fields
+   */
+  bool no_init_;
 
   /**
    * The name of the defined module(s), for TypeScript Definition Files.
@@ -669,18 +677,20 @@ void t_js_generator::generate_js_struct_definition(ofstream& out,
   }
 
   // members with arguments
-  for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
-    string dval = declare_field(*m_iter, false, true);
-    t_type* t = get_true_type((*m_iter)->get_type());
-    if ((*m_iter)->get_value() != NULL && !(t->is_struct() || t->is_xception())) {
-      dval = render_const_value((*m_iter)->get_type(), (*m_iter)->get_value());
-      out << indent() << "this." << (*m_iter)->get_name() << " = " << dval << ";" << endl;
-    } else {
-      out << indent() << dval << ";" << endl;
-    }
-    if (gen_ts_) {
-      f_types_ts_ << ts_indent() << (*m_iter)->get_name() << ": "
-                  << ts_get_type((*m_iter)->get_type()) << ";" << endl;
+  if (!no_init_ || !tstruct->is_union()) {
+    for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
+      string dval = declare_field(*m_iter, false, true);
+      t_type* t = get_true_type((*m_iter)->get_type());
+      if ((*m_iter)->get_value() != NULL && !(t->is_struct() || t->is_xception())) {
+        dval = render_const_value((*m_iter)->get_type(), (*m_iter)->get_value());
+        out << indent() << "this." << (*m_iter)->get_name() << " = " << dval << ";" << endl;
+      } else {
+        out << indent() << dval << ";" << endl;
+      }
+      if (gen_ts_) {
+        f_types_ts_ << ts_indent() << (*m_iter)->get_name() << ": "
+                    << ts_get_type((*m_iter)->get_type()) << ";" << endl;
+      }
     }
   }
 
@@ -2175,4 +2185,5 @@ THRIFT_REGISTER_GENERATOR(js,
                           "    jquery:          Generate jQuery compatible code.\n"
                           "    node:            Generate node.js compatible code.\n"
                           "    wifix:           Add WI patches \n"
+                          "    no_init:         Don't init union fields \n"
                           "    ts:              Generate TypeScript definition files.\n")
