@@ -262,9 +262,9 @@ void t_html_generator::generate_program() {
   f_out_ << "<head>" << endl;
   f_out_ << "<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\" />" << endl;
   generate_style_tag();
-  f_out_ << "<title>Thrift module: " << program_->get_name() << "</title></head><body>" << endl
+  f_out_ << "<title>Module: " << program_->get_name() << "</title></head><body>" << endl
          << "<div class=\"container-fluid\">" << endl
-         << "<h1>Thrift module: " << program_->get_name() << "</h1>" << endl;
+         << "<h1>Module: " << program_->get_name() << "</h1>" << endl;
 
   print_doc(program_);
 
@@ -418,7 +418,7 @@ bool t_html_generator::skip_export(t_doc* tdoc) {
   if (!tdoc->has_doc()) {
     return false;
   }
-    
+
   return (tdoc->get_doc().find("NOHTML") != std::string::npos);
 }
 
