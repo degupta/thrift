@@ -2636,10 +2636,7 @@ void t_go_generator::generate_process_function(t_service* tservice, t_function* 
   vector<t_field*>::const_iterator f_iter;
 
   if (generate_hooks_) {
-    f_service_ << indent() << "if ";
-
-    // Generate the function call
-    f_service_ << "err2 = p.handler.BeforeAction(\"" << publicize(tservice->get_name()) << "\", \"" << publicize(tfunction->get_name()) << "\", map[string]interface{}{";
+    f_service_ << indent() << "err2 = p.handler.BeforeAction(\"" << publicize(tservice->get_name()) << "\", \"" << publicize(tfunction->get_name()) << "\", map[string]interface{}{";
     bool first = true;
     for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
       if (!first) {
@@ -2648,46 +2645,10 @@ void t_go_generator::generate_process_function(t_service* tservice, t_function* 
       f_service_ << "\"" << publicize((*f_iter)->get_name()) << "\": args." << publicize((*f_iter)->get_name());
       first = false;
     }
-    f_service_ << "});";
-    f_service_ << "err2 != nil {" << endl;
+    f_service_ << "})" << endl;
 
-    t_struct* exceptions = tfunction->get_xceptions();
-    const vector<t_field*>& x_fields = exceptions->get_members();
-    if (!x_fields.empty()) {
-      f_service_ << indent() << "switch v := err2.(type) {" << endl;
-
-      vector<t_field*>::const_iterator xf_iter;
-
-      for (xf_iter = x_fields.begin(); xf_iter != x_fields.end(); ++xf_iter) {
-        f_service_ << indent() << "  case " << type_to_go_type(((*xf_iter)->get_type())) << ":"
-                   << endl;
-        f_service_ << indent() << "result."
-                   << publicize(variable_name_to_go_name((*xf_iter)->get_name())) << " = v" << endl;
-      }
-
-      f_service_ << indent() << "  default:" << endl;
-    }
-
-    if (!tfunction->is_oneway()) {
-      f_service_ << indent() << "  x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "
-                                "\"Internal error processing " << escape_string(tfunction->get_name())
-                 << ": \" + err2.Error())" << endl;
-      f_service_ << indent() << "  oprot.WriteMessageBegin(\"" << escape_string(tfunction->get_name())
-                 << "\", thrift.EXCEPTION, seqId)" << endl;
-      f_service_ << indent() << "  x.Write(oprot)" << endl;
-      f_service_ << indent() << "  oprot.WriteMessageEnd()" << endl;
-      f_service_ << indent() << "  oprot.Flush()" << endl;
-    }
-
-    f_service_ << indent() << "  return true, err2" << endl;
-
-    if (!x_fields.empty()) {
-      f_service_ << indent() << "}" << endl;
-    }
-
-    f_service_ << indent() << "}"; // closes err2 != nil
-
-    f_service_ << indent() << "else if ";
+    f_service_ << indent() << "if err2 == nil {" << endl;
+    indent_up();
   } else {
     f_service_ << indent() << "if ";
   }
@@ -2712,7 +2673,14 @@ void t_go_generator::generate_process_function(t_service* tservice, t_function* 
     f_service_ << "args." << publicize((*f_iter)->get_name());
   }
 
-  f_service_ << "); err2 != nil {" << endl;
+  f_service_ << ");";
+
+  if (generate_hooks_) {
+    f_service_ << endl << "}" << endl;
+    f_service_ << "if ";
+  }
+
+  f_service_ << " err2 != nil {" << endl;
 
   t_struct* exceptions = tfunction->get_xceptions();
   const vector<t_field*>& x_fields = exceptions->get_members();
