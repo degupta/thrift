@@ -1753,6 +1753,8 @@ void t_go_generator::generate_service_interface(t_service* tservice) {
 
       f_service_ << indent() << "// Called if an action returned an error" << endl;
       f_service_ << indent() << "ProcessError(error) error" << endl;
+      f_service_ << indent() << "// for panic recovery" << endl;
+      f_service_ << indent() << "Recover(*bool, *thrift.TException)" << endl;
     }
   }
 
@@ -2639,6 +2641,7 @@ void t_go_generator::generate_process_function(t_service* tservice, t_function* 
   vector<t_field*>::const_iterator f_iter;
 
   if (generate_hooks_) {
+    f_service_ << indent() << "defer p.handler.Recover(&success, &err)" << endl;
     f_service_ << indent() << "err2 = p.handler.BeforeAction(\"" << publicize(tservice->get_name()) << "\", \"" << publicize(tfunction->get_name()) << "\", map[string]interface{}{";
     bool first = true;
     for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
