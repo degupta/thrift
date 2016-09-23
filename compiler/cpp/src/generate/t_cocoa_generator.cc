@@ -2307,6 +2307,7 @@ void t_cocoa_generator::generate_serialize_list_element(ofstream& out,
  * @return Java type name, i.e. HashMap<Key,Value>
  */
 string t_cocoa_generator::type_name(t_type* ttype, bool class_ref) {
+  ttype = get_true_type(ttype);
   if (ttype->is_typedef()) {
     t_program* program = ttype->get_program();
     return program ? (program->get_namespace("cocoa") + ttype->get_name()) : ttype->get_name();
